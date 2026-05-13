@@ -4,13 +4,11 @@ from email.message import EmailMessage
 from datetime import datetime, timedelta
 import streamlit.components.v1 as components
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
 import os
 from zoneinfo import ZoneInfo
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="MyData Monitoring", page_icon="📊", layout="centered")
-conn = st.connection("gsheets", type=GSheetsConnection)
 URL_LOGO = "https://raw.githubusercontent.com/uvsq22103456/monitoring_dataops/main/logo.png"
 FICHIER_HISTORIQUE = "historique_alertes.csv"
 
