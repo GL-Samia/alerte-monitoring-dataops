@@ -4,14 +4,17 @@ from email.message import EmailMessage
 from datetime import datetime, timedelta
 import streamlit.components.v1 as components
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 import os
 from zoneinfo import ZoneInfo
 
-# --- CONFIGURATION ---
+# CONFIGURATION DE LA PAGE
 st.set_page_config(page_title="MyData Monitoring", page_icon="📊", layout="centered")
+conn = st.connection("gsheets", type=GSheetsConnection)
 URL_LOGO = "https://raw.githubusercontent.com/uvsq22103456/monitoring_dataops/main/logo.png"
 FICHIER_HISTORIQUE = "historique_alertes.csv"
 
+#DOMAINES POUVANT ETRE IMPACTES
 DOMAINES = {
     "Vente": "",
     "Stock": "<br><span style='font-weight: normal; font-size: 12px; color: #666;'>(stock, ral, mouvement, rupture)</span>",
@@ -19,6 +22,7 @@ DOMAINES = {
     "Détaxe": "<br><span style='font-weight: normal; font-size: 12px; color: #666;'>(bordereaux)</span>",
     "Productivité entrepôt": "<br><span style='font-weight: normal; font-size: 12px; color: #666;'>(Avex, heures)</span>"
 }
+
 LISTE_IMPACTS = [
     "Données Incomplètes", 
     "Retard Global", 
@@ -29,7 +33,7 @@ LISTE_IMPACTS = [
     "➕ AUTRE (Saisie libre)"
 ]
 
-# Ta liste brute (j'ai ajouté le .sort() pour que ce soit rangé de A à Z)
+# La liste brut de tous les rapports du fichier sheets en prod
 LISTE_RAPPORTS_BRUTE = [
     "1001L - Mariage", "Activité par Tranche Horaire", "Baignoire", "Baignoire client par magasin", 
     "BORNES-ALERTING", "C&C - Pilotage Stratégique", "CA Digital", "CA Horaire Digital", 
@@ -58,17 +62,18 @@ LISTE_RAPPORTS_BRUTE = [
     "Gestion des coûts GCP"
 ]
 
-
+# par odrdre croissant cest mieux
 LISTE_RAPPORTS_BRUTE.sort()
 
-# On ajoute l'option "Autre" à la fin pour la flexibilité
+# ca ajoute l'option "Autre" à la fin pour la flexibilité au cas où rapport pas present
 LISTE_RAPPORTS = LISTE_RAPPORTS_BRUTE + ["➕ AUTRE (Saisie libre)"]
-# --- NOUVEAU : FONCTION DE SAUVEGARDE ENRICHIE ---
+
+# FONCTION DE SAUVEGARDE LIGNE 
 def sauvegarder_historique(date_donnees, impact_utilisateur, app_origine="N/A", source="N/A", action_corrective="N/A"):
     
     maintenant = datetime.now(ZoneInfo("Europe/Paris")).strftime("%d/%m/%Y %H:%M:%S")
     
-    # On crée une ligne propre
+    
     nouvelle_ligne = {
         "Date de l'alerte": maintenant, 
         "Date des données": date_donnees, 
@@ -86,7 +91,7 @@ def sauvegarder_historique(date_donnees, impact_utilisateur, app_origine="N/A", 
     else:
         nouveau_statut.to_csv(FICHIER_HISTORIQUE, index=False)
 
-# --- CALCUL DE LA DATE ET DU "J-X" ---
+# CALCUL DE LA DATE ET DU "J-X" 
 aujourd_hui = datetime.now().date()
 hier_par_defaut = aujourd_hui - timedelta(days=1)
 date_choisie = st.date_input("📅 Sélectionner la date des données :", hier_par_defaut)
@@ -101,7 +106,7 @@ mois_fr = {
 }
 date_str = f"{date_choisie.strftime('%d')} {mois_fr[date_choisie.strftime('%B')]}"
 
-# --- FONCTIONS HTML (INTACTES) ---
+# FONCTIONS HTML (tout ce qui est design des alertes)
 def generer_html_tableau(date, statuts, titre, texte_alerte=None):
     lignes_html = ""
     for domaine, sous_titre in DOMAINES.items():
@@ -125,14 +130,14 @@ def generer_html_orange(rapports, type_j, message_alerte):
     liste = "".join([f"<li>{r}</li>" for r in rapports])
     return f"""<div style="background-color: #f0f2f5; padding: 20px; font-family: Arial, sans-serif;"><div style="background-color: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid #e0e0e0;"><h2 style="margin: 0; color: #000;"><img src="{URL_LOGO}" height="35" style="vertical-align:middle;"> | {type_j} partiellement disponible</h2></div><div style="background-color: white; border-radius: 8px; padding: 20px; border: 1px solid #e0e0e0; border-left: 5px solid #FF9800;"><p style="font-weight: bold;">{message_alerte}</p><ul>{liste}</ul><p>L'ensemble des autres rapports est intégralement disponible.</p></div></div>"""
 
-# ==========================================
-# --- CRÉATION DES ONGLETS (TABS) ---
-# ==========================================
+
+# CRÉATION DES ONGLETS (TABS) 
+
 tab1, tab2 = st.tabs(["🚀 Créer une Alerte", "🗄️ Historique & Incidents"])
 
-# ==========================================
-# --- ONGLET 1 : L'APPLICATION PRINCIPALE ---
-# ==========================================
+
+# ONGLET 1 : L'APPLICATION PRINCIPALE
+
 with tab1:
     st.subheader(f"Statut pour le : {date_str} ({j_str})")
     mode = st.radio("Statut des rapports :", ["Tout OK ✅", "Partiel ⚠️", "Retard Global 🚨"])
@@ -143,7 +148,7 @@ with tab1:
     sujet_mail = ""
     html_mail = "" 
     
-    # Variables pour le fichier d'historique (par défaut "N/A" si tout va bien)
+    # Variables pour le fichier d'historique (par défaut "N/A" 
     app_origine = "N/A"
     source_incident = "N/A"
     action_cor = "N/A"
@@ -155,7 +160,7 @@ with tab1:
         impact_propre = "Données Intégrales"
         format_ok = st.selectbox("Format du mail :", ["Tableau complet", "Liste de rapports"])
         if format_ok == "Liste de rapports":
-            rapports_ko_ok = st.multiselect("Rapports à afficher :", ["SUIVI DES VENTES UNITAIRES", "FLASH MARQUES PROPRES", "SUIVI DES STOCKS"], default=["SUIVI DES VENTES UNITAIRES", "FLASH MARQUES PROPRES"])
+            rapports_ko_ok = st.multiselect("Rapports à afficher :", LISTE_RAPPORTS_BRUTE)
             sujet_mail, html_mail = f"🟢 MYDATA : {j_str} Intégralement disponible", generer_html_liste_ok(rapports_ko_ok, date_str, j_str)
         else:
             for dom in DOMAINES.keys(): statuts_tableau[dom] = {"PBI": "✅ disponible", "Deci": "✅ disponible"}
@@ -164,17 +169,17 @@ with tab1:
     elif mode == "Partiel ⚠️":
         impact_propre = "Données Incomplètes"
         
-        # 1. On trie et on utilise la GRANDE liste au lieu de l'ancienne petite liste
+        #on prend la liste triée
         LISTE_RAPPORTS_BRUTE.sort()
         
-        # 2. Le multiselect avec la barre de recherche native de Streamlit
+        # Le multiselect avec la barre de recherche de Streamlit
         st.write("💡 *Astuce : Cliquez et tapez les premières lettres ou des mots du rapport pour le trouver.*")
         rapports_ko_ok = st.multiselect("Sélectionnez les rapports KO :", LISTE_RAPPORTS_BRUTE)
         
-        # 3. L'astuce pour les rapports "en cours de route"
+        # L'astuce pour les rapports non presents
         nouveaux_rapports = st.text_input("✍️ Un autre rapport KO ? (Séparez par une virgule si plusieurs)")
         
-        # 4. On fusionne les deux listes pour le mail et le CSV
+        # On fusionne les deux listes pour le mail et le CSV
         liste_finale = rapports_ko_ok
         if nouveaux_rapports:
             # On ajoute les noms tapés à la main à la liste
@@ -183,19 +188,18 @@ with tab1:
         
         texte_perso = st.text_input("Message d'alerte (modifiable) :", "⚠️ Suite à des retards, les données sont indisponibles pour :")
         
-        # On transforme la liste en texte propre pour le mail et le CSV (C'est ça qui ira dans app_origine)
         rapports_texte = ", ".join(liste_finale)
         
         sujet_mail = f"🟠 MYDATA : Partiellement disponible ({j_str})"
         
-        # On passe la 'liste_finale' à ta fonction de mail
+        # On passe la 'liste_finale' à la fonction de mail
         html_mail = generer_html_orange(liste_finale, j_str, texte_perso)
     elif mode == "Retard Global 🚨":
         impact_propre = "Retard Global" # Le texte exact de ton Power BI
         texte_perso = st.text_input("Message d'alerte (modifiable) :", "⚠️ Suite à des retards dans les traitements, les données sont incomplètes.")
         st.info("Décochez simplement les cases en retard dans le tableau ci-dessous :")
         
-        # Tableau interactif (Le design compact)
+        # Tableau interactif 
         donnees_tableau = {"Domaine": list(DOMAINES.keys()), "Power BI ✅": [True]*len(DOMAINES), "Décisionnel ✅": [True]*len(DOMAINES)}
         df_modifie = st.data_editor(pd.DataFrame(donnees_tableau), hide_index=True, use_container_width=True, disabled=["Domaine"])
 
@@ -211,7 +215,7 @@ with tab1:
         st.write(f"**Sujet de l'email :** {sujet_mail}")
         components.html(html_mail, height=450, scrolling=True)
         
-    # --- NOUVEAU : BLOC TECHNIQUE (INVISIBLE DANS LE MAIL, JUSTE POUR L'HISTORIQUE) ---
+    #  BLOC QS (INVISIBLE DANS LE MAIL, JUSTE POUR L'HISTORIQUE) 
     if mode != "Tout OK ✅":
         st.markdown("---")
         st.markdown("### 🛠️ Renseignement de l'incident (Pour suivi QS)")
@@ -236,7 +240,7 @@ with tab1:
 
    
 
-    # -- BOUTONS D'ACTION --
+    #  BOUTONS D'ACTION 
     if mode != "Tout OK ✅":
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
@@ -253,7 +257,7 @@ with tab1:
             msg['Subject'] = sujet_mail
             msg['From'] = "My Data <mydata@galerieslafayette.com>"
             msg['Reply-To'] = "My Data <mydata@galerieslafayette.com>"
-            #msg['To'] = st.secrets["EMAIL_EXPEDITEUR"]
+            #msg['To'] = st.secrets["EMAIL_EXPEDITEUR"]pas besoin de 'à' on met dans cci
             msg['Bcc'] = st.secrets["DESTINATAIRE"]
             msg.add_alternative(html_mail, subtype='html')
 
@@ -270,6 +274,62 @@ with tab1:
         except Exception as e:
             st.error(f"Erreur : {e}")
 
-
-       
+    if envoi_silencieux:
+        # Sauvegarde spéciale "Fantôme"
+        sauvegarder_historique(date_str, "Sans impact", app_origine, source_incident, action_cor)
+        st.success("🔕 Incident enregistré dans l'historique (Aucun mail envoyé) !")
         
+
+
+# ONGLET 2 : L'HISTORIQUE 
+
+with tab2:
+    st.markdown("### 🗄️ Registre des envois et Incidents")
+    
+    if os.path.exists(FICHIER_HISTORIQUE):
+        try:
+            df_historique = pd.read_csv(FICHIER_HISTORIQUE)
+            
+            st.write("💡 *Vous pouvez modifier les lignes (ex: passer un incident en 'Résolu') puis cliquer sur Sauvegarder.*")
+            
+            #  tableau éditable
+            df_edite = st.data_editor(df_historique.iloc[::-1], use_container_width=True, hide_index=True, num_rows="dynamic")
+            
+            st.markdown("---")
+            col_save, col_clear, col_download = st.columns([1, 1, 1])
+            
+            with col_save:
+                if st.button("💾 Sauvegarder les modifications", type="primary"):
+                    df_edite.iloc[::-1].to_csv(FICHIER_HISTORIQUE, index=False)
+                    st.success("✅ Historique mis à jour !")
+                    st.rerun()
+            
+            with col_clear:
+                st.markdown("🗑️ **Vider le registre**")
+                confirmation = st.checkbox("Confirmer la suppression totale")
+                if confirmation:
+                    if st.button("🚨 OUI, TOUT SUPPRIMER"):
+                        if os.path.exists(FICHIER_HISTORIQUE):
+                            os.remove(FICHIER_HISTORIQUE)
+                        st.rerun()
+
+            with col_download:
+                st.markdown("📥 **Export**")
+                with open(FICHIER_HISTORIQUE, "rb") as file:
+                    st.download_button(
+                        label="Télécharger le CSV",
+                        data=file,
+                        file_name="historique_alertes.csv",
+                        mime="text/csv"
+                    )
+                        
+        except pd.errors.ParserError:
+            st.error("⚠️ Erreur de lecture du fichier.")
+            if st.button("🔄 Réinitialiser le fichier"):
+                os.remove(FICHIER_HISTORIQUE)
+                st.rerun()
+    else:
+        st.info("Aucun historique pour le moment. Le registre se créera au premier envoi.")
+
+
+    
