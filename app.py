@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 # CONFIGURATION DE LA PAGE
 st.set_page_config(page_title="MyData Monitoring", page_icon="📊", layout="centered")
-conn = st.connection("gsheets", type=GSheetsConnection)
+conn = st.connection("gsheets", type=GSheetsConnection) #au cas ou un jour on reussi a directement alimenter le sheets QS
 URL_LOGO = "https://raw.githubusercontent.com/uvsq22103456/monitoring_dataops/main/logo.png"
 FICHIER_HISTORIQUE = "historique_alertes.csv"
 
