@@ -69,23 +69,30 @@ LISTE_RAPPORTS_BRUTE.sort()
 LISTE_RAPPORTS = LISTE_RAPPORTS_BRUTE + ["➕ AUTRE (Saisie libre)"]
 
 # FONCTION DE SAUVEGARDE LIGNE 
-def sauvegarder_historique(date_donnees, impact_utilisateur, app_origine="N/A", source="N/A", action_corrective="N/A"):
+def sauvegarder_historique(date_donnees, impact_utilisateur, origine="N/A", source="N/A", action_corrective="N/A"):
+    maintenant = datetime.now(ZoneInfo("Europe/Paris"))
     
-    maintenant = datetime.now(ZoneInfo("Europe/Paris")).strftime("%d/%m/%Y %H:%M:%S")
-    
-    
+    # On prépare la ligne EXACTEMENT comme les colonnes du Sheets
     nouvelle_ligne = {
-        "Date de l'alerte": maintenant, 
-        "Date des données": date_donnees, 
+        "DateQS": maintenant.strftime("%d/%m/%Y"),
         "Impact utilisateur": impact_utilisateur,
-        "APP (Origine)": app_origine,
+        "Impact DEV": "1", # Par défaut à 1 comme dans ton exemple
+        "Origine": origine,
+        "Date Correctif": maintenant.strftime("%d/%m/%Y"),
+        "récurrence": "N/A",
+        "Action Corrective": action_corrective,
+        "Recommandation": "N/A",
+        "APP": "GCP" if "GCP" in origine.upper() else "POWERBI", # Déduction auto
         "Source": source,
-        "Action Corrective": action_corrective
-        
+        "Année": maintenant.year,
+        "Mois": maintenant.month,
+        "Semaine": maintenant.isocalendar()[1],
+        "JOURS SANS ANO": "0" # À remplir manuellement si besoin
     }
     
     nouveau_statut = pd.DataFrame([nouvelle_ligne])
     
+    # Sauvegarde CSV
     if os.path.exists(FICHIER_HISTORIQUE):
         nouveau_statut.to_csv(FICHIER_HISTORIQUE, mode='a', header=False, index=False)
     else:
