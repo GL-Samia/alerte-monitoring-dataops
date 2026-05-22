@@ -264,7 +264,7 @@ with tab1:
             msg['Subject'] = sujet_mail
             msg['From'] = "My Data <mydata@galerieslafayette.com>"
             msg['Reply-To'] = "My Data <mydata@galerieslafayette.com>"
-            #msg['To'] = st.secrets["EMAIL_EXPEDITEUR"]pas besoin de 'à' on met dans cci
+            msg['To'] = st.secrets["EMAIL_EXPEDITEUR"]
             msg['Bcc'] = st.secrets["DESTINATAIRE"]
             msg.add_alternative(html_mail, subtype='html')
 
