@@ -250,34 +250,34 @@ if emails_finaux:
     st.info(f"Total des destinataires : {len(emails_finaux)} adresse(s)")
    
 
-    #  BOUTONS D'ACTION 
-    if st.button("🚀 ENVOYER L'ALERTE", type="primary", use_container_width=True):
-        if st.button("🚀 ENVOYER L'ALERTE", type="primary", use_container_width=True):
-            if not mail_cible:
-                st.error("Veuillez choisir au moins un destinataire.")
-            else:
-                try:
-                    msg = EmailMessage()
-                    msg['Subject'] = sujet_mail
-                    msg['From'] = "My Data <mydata@galerieslafayette.com>"
-                    msg['To'] = st.secrets["EMAIL_EXPEDITEUR"] # Sécurité : Toi
-                    msg['Bcc'] = mail_cible # Les autres en caché
-                    msg.add_alternative(html_mail, subtype='html')
-                    
-                    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-                        server.starttls()
-                        server.login(st.secrets["EMAIL_EXPEDITEUR"], st.secrets["PASSWORD"])
-                        server.send_message(msg)
-                    
-                    st.success("✅ Alerte envoyée avec succès !")
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"Erreur : {e}")
-
-  
-        
-
-
-
-
+#  BOUTONS D'ACTION 
+if st.button("🚀 ENVOYER L'ALERTE", type="primary", use_container_width=True):
     
+    if not mail_cible:
+        st.error("Veuillez choisir au moins un destinataire.")
+    else:
+        try:
+            msg = EmailMessage()
+            msg['Subject'] = sujet_mail
+            msg['From'] = "My Data <mydata@galerieslafayette.com>"
+            msg['To'] = st.secrets["EMAIL_EXPEDITEUR"] # Sécurité : Toi
+            msg['Bcc'] = mail_cible # Les autres en caché
+            msg.add_alternative(html_mail, subtype='html')
+            
+            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                server.starttls()
+                server.login(st.secrets["EMAIL_EXPEDITEUR"], st.secrets["PASSWORD"])
+                server.send_message(msg)
+            
+            st.success("✅ Alerte envoyée avec succès !")
+            st.balloons()
+        except Exception as e:
+            st.error(f"Erreur : {e}")
+
+
+
+
+
+
+
+
