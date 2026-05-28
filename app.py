@@ -251,31 +251,23 @@ if emails_finaux:
    
 
     #  BOUTONS D'ACTION 
-    if mode != "Tout OK ✅":
-        col_btn1= st.columns(1)
-        with col_btn1:
-            envoi_mail = st.button("🚀 ENVOYER L'ALERTE (Mail)", type="primary", use_container_width=True)
+    if st.button("🚀 ENVOYER L'ALERTE", type="primary", use_container_width=True):
+    if not mail_cible:
+        st.error("Veuillez choisir au moins un destinataire.")
     else:
-        envoi_mail = st.button("🚀 ENVOYER L'ALERTE (Mail)", type="primary", use_container_width=True)
-        envoi_silencieux = False
-
-    if envoi_mail:
         try:
             msg = EmailMessage()
             msg['Subject'] = sujet_mail
             msg['From'] = "My Data <mydata@galerieslafayette.com>"
-            msg['Reply-To'] = "My Data <mydata@galerieslafayette.com>"
-            #msg['To'] = st.secrets["EMAIL_EXPEDITEUR"]
-            msg['Bcc'] = mail_cible
+            msg['To'] = st.secrets["EMAIL_EXPEDITEUR"] # Sécurité : Toi en principal
+            msg['Bcc'] = mail_cible # La liste en caché
             msg.add_alternative(html_mail, subtype='html')
-
+            
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
                 server.starttls()
                 server.login(st.secrets["EMAIL_EXPEDITEUR"], st.secrets["PASSWORD"])
                 server.send_message(msg)
             
-            # Sauvegarde standard pour un vrai retard
-            sauvegarder_historique(date_str, impact_propre, app_origine, source_incident, action_cor)
             
             st.success(f"✅ Alerte envoyée avec succès !")
             st.balloons()
