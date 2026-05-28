@@ -139,7 +139,7 @@ def generer_html_orange(rapports, type_j, message_alerte):
 
 # CRÉATION DES ONGLETS (TABS) 
 
-tab1, tab2 = st.tabs(["🚀 Créer une Alerte", "🗄️ Historique & Incidents"])
+tab1 = st.tabs(["🚀 Créer une Alerte")
 
 
 # ONGLET 1 : L'APPLICATION PRINCIPALE
