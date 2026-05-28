@@ -10,7 +10,6 @@ from zoneinfo import ZoneInfo
 
 # CONFIGURATION DE LA PAGE
 st.set_page_config(page_title="MyData Monitoring", page_icon="📊", layout="centered")
-conn = st.connection("gsheets", type=GSheetsConnection) #au cas ou un jour on reussi a directement alimenter le sheets QS
 URL_LOGO = "https://raw.githubusercontent.com/uvsq22103456/monitoring_dataops/main/logo.png"
 FICHIER_HISTORIQUE = "historique_alertes.csv"
 
@@ -222,26 +221,34 @@ with tab1:
         st.write(f"**Sujet de l'email :** {sujet_mail}")
         components.html(html_mail, height=450, scrolling=True)
         
-    import streamlit as st
+   
 
 st.subheader("Paramètres de diffusion")
 
+# 1. On récupère les noms des listes dans les secrets
+options_initiales = list(st.secrets["DESTINATAIRES"].keys())
 
-options = list(st.secrets["DESTINATAIRES"].keys()) + ["Autre (Saisie manuelle)"]
+# 2. Le Multiselect : permet de choisir plusieurs étiquettes OU de taper du texte
+choix_destinataires = st.multiselect(
+    "Sélectionnez les listes ou tapez des adresses (Appuyez sur Entrée après chaque adresse) :",
+    options=options_initiales
+)
 
+# 3. On transforme les choix en une seule liste d'emails
+liste_finale = []
+for item in choix_destinataires:
+    if item in st.secrets["DESTINATAIRES"]:
+        # Si c'est une liste officielle, on récupère l'email derrière le nom
+        liste_finale.append(st.secrets["DESTINATAIRES"][item])
+    else:
+        # Si c'est un mail tapé à la main, on l'ajoute tel quel
+        liste_finale.append(item)
 
-choix = st.selectbox("Sélectionner le groupe de destinataires :", options)
-
-if choix == "Autre (Saisie manuelle)":
-    # Si on choisit "Autre", on affiche une case vide
-    mail_cible = st.text_input("Tapez l'adresse email manuellement :", placeholder="exemple@galerieslafayette.com")
-else:
-    # Sinon, on prend l'adresse qui correspond au choix dans les secrets
-    mail_cible = st.secrets["DESTINATAIRES"][choix]
-
+# 4. On crée une chaîne de caractères séparée par des virgules pour le mail
+mail_cible = ", ".join(liste_finale)
 
 if mail_cible:
-    st.info(f"L'alerte sera envoyée à : **{mail_cible}**")
+    st.info(f"Emails cibles : {mail_cible}")
    
 
     #  BOUTONS D'ACTION 
