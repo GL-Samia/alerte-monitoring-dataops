@@ -260,7 +260,7 @@ if st.button("🚀 ENVOYER L'ALERTE", type="primary", use_container_width=True):
             msg = EmailMessage()
             msg['Subject'] = sujet_mail
             msg['From'] = "My Data <mydata@galerieslafayette.com>"
-            msg['To'] = st.secrets["EMAIL_EXPEDITEUR"] # Sécurité : Toi
+            #msg['To'] = st.secrets["EMAIL_EXPEDITEUR"] # Sécurité : Toi
             msg['Bcc'] = mail_cible # Les autres en caché
             msg.add_alternative(html_mail, subtype='html')
             
