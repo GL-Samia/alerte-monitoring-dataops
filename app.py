@@ -222,29 +222,26 @@ with tab1:
         st.write(f"**Sujet de l'email :** {sujet_mail}")
         components.html(html_mail, height=450, scrolling=True)
         
-    #  BLOC QS (INVISIBLE DANS LE MAIL, JUSTE POUR L'HISTORIQUE) 
-    if mode != "Tout OK ✅":
-        st.markdown("---")
-        st.markdown("### 🛠️ Renseignement de l'incident (Pour suivi QS)")
-        st.caption("Ces informations ne seront PAS envoyées dans le mail, elles servent uniquement au Dashboard Power BI Qualité de Service.")
+    import streamlit as st
 
-        colA, colB = st.columns(2)
-        with colA:
-            choix_impact = st.selectbox("Impact utilisateur :", LISTE_IMPACTS)
-        
-            if choix_impact == "➕ AUTRE (Saisie libre)":
-                impact_final = st.text_input("Précisez l'impact personnalisé :")
-            else:
-                impact_final = choix_impact
-    
-            app_origine = st.text_input(
-                "Origine :", 
-                placeholder="Décrivez la cause (ex: Anomalie Lakehouse...)"
-            )
-        with colB:
-            source_incident = st.selectbox("Source :", ["Intra data", "Extra data"])
-            action_cor = st.text_input("Action corrective :", "Refresh des tables GCP et relance des datasets...")
+st.subheader("Paramètres de diffusion")
 
+
+options = list(st.secrets["DESTINATAIRES"].keys()) + ["Autre (Saisie manuelle)"]
+
+
+choix = st.selectbox("Sélectionner le groupe de destinataires :", options)
+
+if choix == "Autre (Saisie manuelle)":
+    # Si on choisit "Autre", on affiche une case vide
+    mail_cible = st.text_input("Tapez l'adresse email manuellement :", placeholder="exemple@galerieslafayette.com")
+else:
+    # Sinon, on prend l'adresse qui correspond au choix dans les secrets
+    mail_cible = st.secrets["DESTINATAIRES"][choix]
+
+
+if mail_cible:
+    st.info(f"L'alerte sera envoyée à : **{mail_cible}**")
    
 
     #  BOUTONS D'ACTION 
@@ -264,8 +261,8 @@ with tab1:
             msg['Subject'] = sujet_mail
             msg['From'] = "My Data <mydata@galerieslafayette.com>"
             msg['Reply-To'] = "My Data <mydata@galerieslafayette.com>"
-            msg['To'] = st.secrets["EMAIL_EXPEDITEUR"]
-            msg['Bcc'] = st.secrets["DESTINATAIRE"]
+            #msg['To'] = st.secrets["EMAIL_EXPEDITEUR"]
+            msg['Bcc'] = mail_cible
             msg.add_alternative(html_mail, subtype='html')
 
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
