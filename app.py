@@ -229,10 +229,19 @@ st.subheader("Paramètres de diffusion")
 options_initiales = list(st.secrets["DESTINATAIRES"].keys())
 
 # 2. Le Multiselect : permet de choisir plusieurs étiquettes OU de taper du texte
+# On ajoute l'option qui permet de taper ce qu'on veut
 choix_destinataires = st.multiselect(
-    "Sélectionnez les listes ou tapez des adresses (Appuyez sur Entrée après chaque adresse) :",
-    options=options_initiales
+    "Sélectionnez les listes ou tapez des adresses :",
+    options=options_initiales,
+    default=None, # Rien n'est sélectionné par défaut
+    placeholder="Tapez un mail ou choisissez...",
+    # C'EST CETTE LIGNE QUI CHANGE TOUT :
+    key="select_mails" 
 )
+
+# Comme le multiselect de base ne laisse pas toujours taper, 
+# on peut aussi faire une astuce avec un text_input juste en dessous 
+# si le multiselect fait de la résistance.
 
 # 3. On transforme les choix en une seule liste d'emails
 liste_finale = []
