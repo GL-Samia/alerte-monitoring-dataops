@@ -223,41 +223,37 @@ with tab1:
         
    
 
+import streamlit as st
+
 st.subheader("Paramètres de diffusion")
 
-# 1. On récupère les noms des listes dans les secrets
-options_initiales = list(st.secrets["DESTINATAIRES"].keys())
-
-# 2. Le Multiselect : permet de choisir plusieurs étiquettes OU de taper du texte
-# On ajoute l'option qui permet de taper ce qu'on veut
-choix_destinataires = st.multiselect(
-    "Sélectionnez les listes ou tapez des adresses :",
-    options=options_initiales,
-    default=None, # Rien n'est sélectionné par défaut
-    placeholder="Tapez un mail ou choisissez...",
-    # C'EST CETTE LIGNE QUI CHANGE TOUT :
-    key="select_mails" 
+# 1. Choix parmi les listes officielles
+listes_officielles = st.multiselect(
+    "Listes enregistrées :",
+    options=list(st.secrets["DESTINATAIRES"].keys())
 )
 
-# Comme le multiselect de base ne laisse pas toujours taper, 
-# on peut aussi faire une astuce avec un text_input juste en dessous 
-# si le multiselect fait de la résistance.
+# 2. Zone pour ajouter des mails manuels (séparés par des virgules)
+mails_manuels = st.text_input("Ajouter d'autres emails (facultatif) :", placeholder="ex: chef@galeries.com, collegue@galeries.com")
 
-# 3. On transforme les choix en une seule liste d'emails
-liste_finale = []
-for item in choix_destinataires:
-    if item in st.secrets["DESTINATAIRES"]:
-        # Si c'est une liste officielle, on récupère l'email derrière le nom
-        liste_finale.append(st.secrets["DESTINATAIRES"][item])
-    else:
-        # Si c'est un mail tapé à la main, on l'ajoute tel quel
-        liste_finale.append(item)
+# 3. On rassemble tout proprement
+emails_finaux = []
 
-# 4. On crée une chaîne de caractères séparée par des virgules pour le mail
-mail_cible = ", ".join(liste_finale)
+# On ajoute les mails des listes choisies
+for nom in listes_officielles:
+    emails_finaux.append(st.secrets["DESTINATAIRES"][nom])
 
-if mail_cible:
-    st.info(f"Emails cibles : {mail_cible}")
+# On ajoute les mails tapés à la main s'il y en a
+if mails_manuels:
+    # On nettoie les espaces et on sépare par les virgules
+    manuels_list = [m.strip() for m in mails_manuels.split(",")]
+    emails_finaux.extend(manuels_list)
+
+# 4. Résultat final pour le champ Bcc
+mail_cible = ", ".join(emails_finaux)
+
+if emails_finaux:
+    st.info(f"Total des destinataires : {len(emails_finaux)} adresse(s)")
    
 
     #  BOUTONS D'ACTION 
