@@ -137,93 +137,87 @@ def generer_html_orange(rapports, type_j, message_alerte):
     return f"""<div style="background-color: #f0f2f5; padding: 20px; font-family: Arial, sans-serif;"><div style="background-color: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid #e0e0e0;"><h2 style="margin: 0; color: #000;"><img src="{URL_LOGO}" height="35" style="vertical-align:middle;"> | {type_j} partiellement disponible</h2></div><div style="background-color: white; border-radius: 8px; padding: 20px; border: 1px solid #e0e0e0; border-left: 5px solid #FF9800;"><p style="font-weight: bold;">{message_alerte}</p><ul>{liste}</ul><p>L'ensemble des autres rapports est intégralement disponible.</p></div></div>"""
 
 
-# CRÉATION DES ONGLETS (TABS) 
-
-tab1 = st.tabs(["🚀 Créer une Alerte"])
-
-
 # ONGLET 1 : L'APPLICATION PRINCIPALE
 
-with tab1:
-    st.subheader(f"Statut pour le : {date_str} ({j_str})")
-    mode = st.radio("Statut des rapports :", ["Tout OK ✅", "Partiel ⚠️", "Retard Global 🚨"])
 
-    statuts_tableau = {}
-    rapports_ko_ok = []
-    format_ok = ""
-    sujet_mail = ""
-    html_mail = "" 
-    
-    # Variables pour le fichier d'historique (par défaut "N/A" 
-    app_origine = "N/A"
-    source_incident = "N/A"
-    action_cor = "N/A"
-    statut_res = "N/A"
+st.subheader(f"Statut pour le : {date_str} ({j_str})")
+mode = st.radio("Statut des rapports :", ["Tout OK ✅", "Partiel ⚠️", "Retard Global 🚨"])
+
+statuts_tableau = {}
+rapports_ko_ok = []
+format_ok = ""
+sujet_mail = ""
+html_mail = "" 
+
+# Variables pour le fichier d'historique (par défaut "N/A" 
+app_origine = "N/A"
+source_incident = "N/A"
+action_cor = "N/A"
+statut_res = "N/A"
+impact_propre = "Données Intégrales"
+
+# -- LOGIQUE DE CHOIX --
+if mode == "Tout OK ✅":
     impact_propre = "Données Intégrales"
+    format_ok = st.selectbox("Format du mail :", ["Tableau complet", "Liste de rapports"])
+    if format_ok == "Liste de rapports":
+        rapports_ko_ok = st.multiselect("Rapports à afficher :", LISTE_RAPPORTS_BRUTE)
+        sujet_mail, html_mail = f"🟢 MYDATA : {j_str} Intégralement disponible", generer_html_liste_ok(rapports_ko_ok, date_str, j_str)
+    else:
+        for dom in DOMAINES.keys(): statuts_tableau[dom] = {"PBI": "✅ disponible", "Deci": "✅ disponible"}
+        sujet_mail, html_mail = f"🟢 MYDATA : Données du {date_str} Disponibles", generer_html_tableau(date_str, statuts_tableau, "Données Disponibles")
 
-    # -- LOGIQUE DE CHOIX --
-    if mode == "Tout OK ✅":
-        impact_propre = "Données Intégrales"
-        format_ok = st.selectbox("Format du mail :", ["Tableau complet", "Liste de rapports"])
-        if format_ok == "Liste de rapports":
-            rapports_ko_ok = st.multiselect("Rapports à afficher :", LISTE_RAPPORTS_BRUTE)
-            sujet_mail, html_mail = f"🟢 MYDATA : {j_str} Intégralement disponible", generer_html_liste_ok(rapports_ko_ok, date_str, j_str)
-        else:
-            for dom in DOMAINES.keys(): statuts_tableau[dom] = {"PBI": "✅ disponible", "Deci": "✅ disponible"}
-            sujet_mail, html_mail = f"🟢 MYDATA : Données du {date_str} Disponibles", generer_html_tableau(date_str, statuts_tableau, "Données Disponibles")
+elif mode == "Partiel ⚠️":
+    impact_propre = "Données Incomplètes"
+    
+    #on prend la liste triée
+    LISTE_RAPPORTS_BRUTE.sort()
+    
+    # Le multiselect avec la barre de recherche de Streamlit
+    st.write("💡 *Astuce : Cliquez et tapez les premières lettres ou des mots du rapport pour le trouver.*")
+    rapports_ko_ok = st.multiselect("Sélectionnez les rapports KO :", LISTE_RAPPORTS_BRUTE)
+    
+    # L'astuce pour les rapports non presents
+    nouveaux_rapports = st.text_input("✍️ Un autre rapport KO ? (Séparez par une virgule si plusieurs)")
+    
+    # On fusionne les deux listes pour le mail et le CSV
+    liste_finale = rapports_ko_ok
+    if nouveaux_rapports:
+        # On ajoute les noms tapés à la main à la liste
+        extra = [r.strip() for r in nouveaux_rapports.split(",")]
+        liste_finale = liste_finale + extra
+    
+    texte_perso = st.text_input("Message d'alerte (modifiable) :", "⚠️ Suite à des retards, les données sont indisponibles pour :")
+    
+    rapports_texte = ", ".join(liste_finale)
+    
+    sujet_mail = f"🟠 MYDATA : Partiellement disponible ({j_str})"
+    
+    # On passe la 'liste_finale' à la fonction de mail
+    html_mail = generer_html_orange(liste_finale, j_str, texte_perso)
+elif mode == "Retard Global 🚨":
+    impact_propre = "Retard Global" # Le texte exact de ton Power BI
+    texte_perso = st.text_input("Message d'alerte (modifiable) :", "⚠️ Suite à des retards dans les traitements, les données sont incomplètes.")
+    st.info("Décochez simplement les cases en retard dans le tableau ci-dessous :")
+    
+    # Tableau interactif 
+    donnees_tableau = {"Domaine": list(DOMAINES.keys()), "Power BI ✅": [True]*len(DOMAINES), "Décisionnel ✅": [True]*len(DOMAINES)}
+    df_modifie = st.data_editor(pd.DataFrame(donnees_tableau), hide_index=True, use_container_width=True, disabled=["Domaine"])
 
-    elif mode == "Partiel ⚠️":
-        impact_propre = "Données Incomplètes"
-        
-        #on prend la liste triée
-        LISTE_RAPPORTS_BRUTE.sort()
-        
-        # Le multiselect avec la barre de recherche de Streamlit
-        st.write("💡 *Astuce : Cliquez et tapez les premières lettres ou des mots du rapport pour le trouver.*")
-        rapports_ko_ok = st.multiselect("Sélectionnez les rapports KO :", LISTE_RAPPORTS_BRUTE)
-        
-        # L'astuce pour les rapports non presents
-        nouveaux_rapports = st.text_input("✍️ Un autre rapport KO ? (Séparez par une virgule si plusieurs)")
-        
-        # On fusionne les deux listes pour le mail et le CSV
-        liste_finale = rapports_ko_ok
-        if nouveaux_rapports:
-            # On ajoute les noms tapés à la main à la liste
-            extra = [r.strip() for r in nouveaux_rapports.split(",")]
-            liste_finale = liste_finale + extra
-        
-        texte_perso = st.text_input("Message d'alerte (modifiable) :", "⚠️ Suite à des retards, les données sont indisponibles pour :")
-        
-        rapports_texte = ", ".join(liste_finale)
-        
-        sujet_mail = f"🟠 MYDATA : Partiellement disponible ({j_str})"
-        
-        # On passe la 'liste_finale' à la fonction de mail
-        html_mail = generer_html_orange(liste_finale, j_str, texte_perso)
-    elif mode == "Retard Global 🚨":
-        impact_propre = "Retard Global" # Le texte exact de ton Power BI
-        texte_perso = st.text_input("Message d'alerte (modifiable) :", "⚠️ Suite à des retards dans les traitements, les données sont incomplètes.")
-        st.info("Décochez simplement les cases en retard dans le tableau ci-dessous :")
-        
-        # Tableau interactif 
-        donnees_tableau = {"Domaine": list(DOMAINES.keys()), "Power BI ✅": [True]*len(DOMAINES), "Décisionnel ✅": [True]*len(DOMAINES)}
-        df_modifie = st.data_editor(pd.DataFrame(donnees_tableau), hide_index=True, use_container_width=True, disabled=["Domaine"])
+    for index, row in df_modifie.iterrows():
+        domaine = row["Domaine"]
+        pbi = "✅ disponible" if row["Power BI ✅"] else "⚠️ en cours"
+        deci = "✅ disponible" if row["Décisionnel ✅"] else "⚠️ en cours"
+        statuts_tableau[domaine] = {"PBI": pbi, "Deci": deci}
 
-        for index, row in df_modifie.iterrows():
-            domaine = row["Domaine"]
-            pbi = "✅ disponible" if row["Power BI ✅"] else "⚠️ en cours"
-            deci = "✅ disponible" if row["Décisionnel ✅"] else "⚠️ en cours"
-            statuts_tableau[domaine] = {"PBI": pbi, "Deci": deci}
+    sujet_mail, html_mail = f"🔴 MYDATA : Retard sur les Données du {date_str}", generer_html_tableau(date_str, statuts_tableau, "Retard sur les Données", texte_perso)
+# -- APERÇU DU MAIL --
+with st.expander("👀 Voir l'aperçu du mail avant envoi", expanded=False):
+    st.write(f"**Sujet de l'email :** {sujet_mail}")
+    components.html(html_mail, height=450, scrolling=True)
+    
 
-        sujet_mail, html_mail = f"🔴 MYDATA : Retard sur les Données du {date_str}", generer_html_tableau(date_str, statuts_tableau, "Retard sur les Données", texte_perso)
-    # -- APERÇU DU MAIL --
-    with st.expander("👀 Voir l'aperçu du mail avant envoi", expanded=False):
-        st.write(f"**Sujet de l'email :** {sujet_mail}")
-        components.html(html_mail, height=450, scrolling=True)
-        
-   
 
-import streamlit as st
 
 st.subheader("Paramètres de diffusion")
 
