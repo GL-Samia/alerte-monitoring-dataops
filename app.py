@@ -258,11 +258,9 @@ if emails_finaux:
 
     #  BOUTONS D'ACTION 
     if mode != "Tout OK ✅":
-        col_btn1, col_btn2 = st.columns(2)
+        col_btn1= st.columns(1)
         with col_btn1:
             envoi_mail = st.button("🚀 ENVOYER L'ALERTE (Mail)", type="primary", use_container_width=True)
-        with col_btn2:
-            envoi_silencieux = st.button("🔕 ENREGISTRER SANS MAIL (< 8h30)", use_container_width=True)
     else:
         envoi_mail = st.button("🚀 ENVOYER L'ALERTE (Mail)", type="primary", use_container_width=True)
         envoi_silencieux = False
@@ -290,62 +288,10 @@ if emails_finaux:
         except Exception as e:
             st.error(f"Erreur : {e}")
 
-    if envoi_silencieux:
-        # Sauvegarde spéciale "Fantôme"
-        sauvegarder_historique(date_str, "Sans impact", app_origine, source_incident, action_cor)
-        st.success("🔕 Incident enregistré dans l'historique (Aucun mail envoyé) !")
+  
         
 
 
-# ONGLET 2 : L'HISTORIQUE 
-
-with tab2:
-    st.markdown("### 🗄️ Registre des envois et Incidents")
-    
-    if os.path.exists(FICHIER_HISTORIQUE):
-        try:
-            df_historique = pd.read_csv(FICHIER_HISTORIQUE)
-            
-            st.write("💡 *Vous pouvez modifier les lignes (ex: passer un incident en 'Résolu') puis cliquer sur Sauvegarder.*")
-            
-            #  tableau éditable
-            df_edite = st.data_editor(df_historique.iloc[::-1], use_container_width=True, hide_index=True, num_rows="dynamic")
-            
-            st.markdown("---")
-            col_save, col_clear, col_download = st.columns([1, 1, 1])
-            
-            with col_save:
-                if st.button("💾 Sauvegarder les modifications", type="primary"):
-                    df_edite.iloc[::-1].to_csv(FICHIER_HISTORIQUE, index=False)
-                    st.success("✅ Historique mis à jour !")
-                    st.rerun()
-            
-            with col_clear:
-                st.markdown("🗑️ **Vider le registre**")
-                confirmation = st.checkbox("Confirmer la suppression totale")
-                if confirmation:
-                    if st.button("🚨 OUI, TOUT SUPPRIMER"):
-                        if os.path.exists(FICHIER_HISTORIQUE):
-                            os.remove(FICHIER_HISTORIQUE)
-                        st.rerun()
-
-            with col_download:
-                st.markdown("📥 **Export**")
-                with open(FICHIER_HISTORIQUE, "rb") as file:
-                    st.download_button(
-                        label="Télécharger le CSV",
-                        data=file,
-                        file_name="historique_alertes.csv",
-                        mime="text/csv"
-                    )
-                        
-        except pd.errors.ParserError:
-            st.error("⚠️ Erreur de lecture du fichier.")
-            if st.button("🔄 Réinitialiser le fichier"):
-                os.remove(FICHIER_HISTORIQUE)
-                st.rerun()
-    else:
-        st.info("Aucun historique pour le moment. Le registre se créera au premier envoi.")
 
 
     
