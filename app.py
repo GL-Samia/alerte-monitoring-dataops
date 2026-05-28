@@ -228,7 +228,7 @@ listes_officielles = st.multiselect(
 )
 
 # 2. Zone pour ajouter des mails manuels (séparés par des virgules)
-mails_manuels = st.text_input("Ajouter d'autres emails (facultatif) :", placeholder="ex: chef@galeries.com, collegue@galeries.com")
+mails_manuels = st.text_input("Ajouter d'autres emails (facultatif) :", placeholder="ex: collegue@galeries.com")
 
 # 3. On rassemble tout proprement
 emails_finaux = []
