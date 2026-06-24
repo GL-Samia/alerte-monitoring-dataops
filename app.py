@@ -15,7 +15,7 @@ FICHIER_HISTORIQUE = "historique_alertes.csv"
 
 #DOMAINES POUVANT ETRE IMPACTES
 DOMAINES = {
-    "Vente": "",
+    "Vente / Digital": "",
     "Stock": "<br><span style='font-weight: normal; font-size: 12px; color: #666;'>(stock, ral, mouvement, rupture)</span>",
     "Bornes": "<br><span style='font-weight: normal; font-size: 12px; color: #666;'>(entrées magasin)</span>",
     "Détaxe": "<br><span style='font-weight: normal; font-size: 12px; color: #666;'>(bordereaux)</span>",
