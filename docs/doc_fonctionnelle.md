@@ -20,7 +20,7 @@ Vente / Digital, Stock, Bornes, Détaxe, Productivité entrepôt.
 - `generer_html_tableau()` : mail avec tableau statut par domaine (couleurs vert/orange).
 - `generer_html_liste_ok()` : mail liste verte "intégralement disponible".
 - `generer_html_orange()` : mail liste orange "partiellement disponible".
-- `sauvegarder_historique()` : écriture d'une ligne dans `historique_alertes.csv` (schéma calé sur un Google Sheets prod). **Actuellement non branchée.**
+- `sauvegarder_historique(date_donnees, impact_utilisateur, ...)` : écriture d'une ligne dans `historique_alertes.csv` (schéma calé sur un Google Sheets prod). **Branchée** : appelée après un envoi SMTP réussi. `DateQS` = date des données sélectionnée ; `Date Correctif` = jour d'envoi (heure de Paris). Échec d'écriture → warning non bloquant.
 
 ## Données de référence
 - `DOMAINES` : dict domaine → sous-titre HTML.
@@ -32,5 +32,9 @@ Vente / Digital, Stock, Bornes, Détaxe, Productivité entrepôt.
 - SMTP Gmail pour l'envoi.
 - Logo hébergé sur GitHub raw.
 
+## Persistance de l'historique
+- Backend actuel : CSV local (`historique_alertes.csv`), **éphémère sur Streamlit Cloud** (perdu au redémarrage du conteneur). Ignoré par git.
+- Évolution recommandée : écrire l'historique via `GSheetsConnection` (déjà importé) pour un stockage durable partagé.
+
 ## Architecture cible (CLAUDE.md)
-Non appliquée à ce jour : le projet est un script Streamlit unique. Une éventuelle refonte devrait extraire la logique HTML, la persistance et l'envoi mail dans des modules dédiés sous `src/`.
+Non appliquée à ce jour : le projet est un script Streamlit unique. Une éventuelle refonte devrait extraire la logique HTML, la persistance et l'envoi mail dans des modules dédiés sous `src/` (ce qui permettrait aussi des tests unitaires, aujourd'hui impossibles car tout s'exécute au niveau module).
