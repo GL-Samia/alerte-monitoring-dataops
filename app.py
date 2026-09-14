@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 st.set_page_config(page_title="MyData Monitoring", page_icon="📊", layout="centered")
 URL_LOGO = "https://raw.githubusercontent.com/uvsq22103456/monitoring_dataops/main/logo.png"
 FICHIER_HISTORIQUE = "historique_alertes.csv"
+TZ_PARIS = ZoneInfo("Europe/Paris")
 
 #DOMAINES POUVANT ETRE IMPACTES
 DOMAINES = {
@@ -69,11 +70,14 @@ LISTE_RAPPORTS = LISTE_RAPPORTS_BRUTE + ["➕ AUTRE (Saisie libre)"]
 
 # FONCTION DE SAUVEGARDE LIGNE 
 def sauvegarder_historique(date_donnees, impact_utilisateur, origine="N/A", source="N/A", action_corrective="N/A"):
-    maintenant = datetime.now(ZoneInfo("Europe/Paris"))
-    
+    maintenant = datetime.now(TZ_PARIS)
+
+    # DateQS = date des données concernées par l'alerte (accepte date ou datetime)
+    date_qs = date_donnees.strftime("%d/%m/%Y") if hasattr(date_donnees, "strftime") else str(date_donnees)
+
     # On prépare la ligne EXACTEMENT comme les colonnes du Sheets
     nouvelle_ligne = {
-        "DateQS": maintenant.strftime("%d/%m/%Y"),
+        "DateQS": date_qs,
         "Impact utilisateur": impact_utilisateur,
         "Impact DEV": "1", # Par défaut à 1 comme dans ton exemple
         "Origine": origine,
@@ -97,7 +101,7 @@ def sauvegarder_historique(date_donnees, impact_utilisateur, origine="N/A", sour
     else:
         nouveau_statut.to_csv(FICHIER_HISTORIQUE, index=False)
 
-# CALCUL DE LA DATE ET DU "J-X" 
+# CALCUL DE LA DATE ET DU "J-X"
 aujourd_hui = datetime.now().date()
 hier_par_defaut = aujourd_hui - timedelta(days=1)
 date_choisie = st.date_input("📅 Sélectionner la date des données :", hier_par_defaut)
@@ -269,6 +273,17 @@ if st.button("🚀 ENVOYER L'ALERTE", type="primary", use_container_width=True):
                 server.login(st.secrets["EMAIL_EXPEDITEUR"], st.secrets["PASSWORD"])
                 server.send_message(msg)
             
+            # Journalisation de l'alerte envoyée (historique CSV)
+            source_rapports = ", ".join(rapports_ko_ok) if rapports_ko_ok else "N/A"
+            try:
+                sauvegarder_historique(
+                    date_donnees=date_choisie,
+                    impact_utilisateur=impact_propre,
+                    source=source_rapports,
+                )
+            except Exception as e_hist:
+                st.warning(f"⚠️ Alerte envoyée mais historique non enregistré : {e_hist}")
+
             st.success("✅ Alerte envoyée avec succès !")
             st.balloons()
         except Exception as e:
