@@ -1,0 +1,21 @@
+# Secrets Streamlit
+.streamlit/secrets.toml
+
+# Données générées par l'application
+historique_alertes.csv
+
+# Instructions locales agent IA
+claude.md
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# OS / éditeur
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
